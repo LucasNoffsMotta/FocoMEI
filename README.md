@@ -1,10 +1,142 @@
-Para desenvolver:
- git clone https://github.com/LucasNoffsMotta/FocoMEI.git
+# FocoMEI
 
- Para testar a API:
+Aplicação web para apoiar o **Microempreendedor Individual (MEI)** no controle de produtos e vendas, com uma API em .NET 8 e um frontend em Next.js.
 
- - Apos clonar o repositorio, abrir a pasta FocoMEI_Backend, executar a sln. Uma vez dentro da sln, rodar o comando dotnet restore para baixar todos os pacotes necessarios.
+O projeto é dividido em duas pastas:
 
- - Uma vez que a sln builde com sucesso, com a API rodando localmente sera possivel executar e chamar os endpoints definidos nas classes de controllers:
+- `FocoMEI_Backend` — API REST em ASP.NET Core 8 com banco SQLite.
+- `FocoMEI_Frontend` — aplicação Next.js (App Router) em TypeScript.
 
-   <img width="1542" height="851" alt="image" src="https://github.com/user-attachments/assets/e3ae8132-dc99-4929-b79e-673abfee2d65" />
+---
+
+## Stack
+
+**Backend**
+- .NET 8 / ASP.NET Core
+- Entity Framework Core 8 (provedor SQLite)
+- Swashbuckle (Swagger UI)
+
+**Frontend**
+- Next.js 16 (App Router)
+- React 19
+- TypeScript 5.7
+- Tailwind CSS 4
+- Radix UI
+
+---
+
+## Pré-requisitos
+
+Antes de começar, instale:
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js 20+](https://nodejs.org/) (Next.js 16 exige Node 20 ou superior)
+- [pnpm](https://pnpm.io/installation) (recomendado) ou npm
+- Git
+
+Para conferir as versões instaladas:
+
+```bash
+dotnet --version
+node --version
+pnpm --version
+```
+
+---
+
+## Como rodar
+
+Clone o repositório:
+
+```bash
+git clone https://github.com/LucasNoffsMotta/FocoMEI.git
+cd FocoMEI
+```
+
+### 1. Backend (API)
+
+Em um terminal, dentro da pasta do backend:
+
+```bash
+cd FocoMEI_Backend
+dotnet restore
+dotnet run
+```
+
+A API sobe em:
+
+- HTTP: <http://localhost:5086>
+- HTTPS: <https://localhost:7217>
+
+Em ambiente de desenvolvimento, o Swagger UI fica disponível em <http://localhost:5086/swagger> com a documentação interativa dos endpoints.
+
+O banco SQLite (`FocoMEI.db`) já está incluído no repositório com dados iniciais (alguns produtos e um usuário de exemplo), então não é necessário rodar migrations para começar.
+
+### 2. Frontend
+
+Em outro terminal, dentro da pasta do frontend:
+
+```bash
+cd FocoMEI_Frontend
+pnpm install
+pnpm dev
+```
+
+Se preferir npm:
+
+```bash
+cd FocoMEI_Frontend
+npm install
+npm run dev
+```
+
+A aplicação ficará disponível em <http://localhost:3000>.
+
+---
+
+## Endpoints da API
+
+Endpoints atualmente expostos:
+
+| Método | Rota           | Descrição                  |
+| ------ | -------------- | -------------------------- |
+| GET    | `/api/product` | Lista todos os produtos    |
+| GET    | `/api/sale`    | Lista todas as vendas      |
+
+O arquivo `FocoMEI_Backend/tests.http` traz requisições prontas para testar a API a partir do Visual Studio ou da extensão REST Client do VS Code.
+
+---
+
+## Estrutura do projeto
+
+```
+FocoMEI/
+├── FocoMEI_Backend/
+│   ├── Controller/        # Controllers da API (Product, Sale)
+│   ├── Data/              # AppDbContext (EF Core)
+│   ├── Migrations/        # Migrations do EF Core
+│   ├── Models/            # Entidades (Product, Sale, User, ModelBase)
+│   ├── Services/          # Serviços (Products, Sales)
+│   ├── Properties/        # launchSettings.json
+│   ├── appsettings.json   # Configurações (connection string)
+│   ├── FocoMEI.db         # Banco SQLite com dados iniciais
+│   └── Program.cs         # Bootstrap da aplicação
+└── FocoMEI_Frontend/
+    ├── app/               # Rotas e layouts (App Router do Next.js)
+    ├── components/        # Componentes React (chat, ui)
+    ├── hooks/             # React hooks
+    ├── lib/               # Utilitários
+    ├── public/            # Assets estáticos
+    └── styles/            # Estilos globais
+```
+
+---
+
+## Scripts úteis (frontend)
+
+| Comando         | O que faz                                  |
+| --------------- | ------------------------------------------ |
+| `pnpm dev`      | Sobe o servidor de desenvolvimento         |
+| `pnpm build`    | Faz o build de produção                    |
+| `pnpm start`    | Roda o build de produção                   |
+| `pnpm lint`     | Roda o ESLint                              |
