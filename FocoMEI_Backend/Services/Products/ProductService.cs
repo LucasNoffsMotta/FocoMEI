@@ -17,5 +17,12 @@ namespace FocoMEI_Backend.Services.Products
         {
             return await _dbContext.Products.ToListAsync();
         }
+
+        public async Task<bool> Create(Product product)
+        {
+            _dbContext.Products.Add(product);
+            int n = await _dbContext.SaveChangesAsync();
+            return n > 0;
+        }
     }
 }

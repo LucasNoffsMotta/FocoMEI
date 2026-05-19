@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FocoMEI_Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260513204317_First")]
+    [Migration("20260518223920_First")]
     partial class First
     {
         /// <inheritdoc />
@@ -29,15 +29,10 @@ namespace FocoMEI_Backend.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("SaleId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<decimal?>("Value")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("SaleId");
 
                     b.ToTable("Products");
 
@@ -62,10 +57,18 @@ namespace FocoMEI_Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
 
                     b.HasIndex("UserId");
 
@@ -94,27 +97,23 @@ namespace FocoMEI_Backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("FocoMEI_Backend.Models.Product", b =>
-                {
-                    b.HasOne("FocoMEI_Backend.Models.Sale", null)
-                        .WithMany("Items")
-                        .HasForeignKey("SaleId");
-                });
-
             modelBuilder.Entity("FocoMEI_Backend.Models.Sale", b =>
                 {
+                    b.HasOne("FocoMEI_Backend.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("FocoMEI_Backend.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
-                });
+                    b.Navigation("Product");
 
-            modelBuilder.Entity("FocoMEI_Backend.Models.Sale", b =>
-                {
-                    b.Navigation("Items");
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

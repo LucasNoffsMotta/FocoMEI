@@ -8,8 +8,12 @@ namespace FocoMEI_Backend.Models
         public int UserId { get; set; }
         public User? User { get; set; }
         [Required]
-        public decimal Total;
+        public decimal Total {get; set;}
+
+        public int Quantidade {get;set;}
+
         [Required]
-        public List<Product>? Items { get; set; }
+        public int ProductId { get; set; }
+        public Product? Product { get; set; }
     }
 }

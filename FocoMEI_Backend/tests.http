@@ -1,3 +1,22 @@
 ###
 GET http://localhost:5086/api/product
 
+###
+POST http://localhost:5086/api/sale/create
+Content-Type: application/json
+
+{
+    "userId":1,
+    "total": 150,
+    "quantidade":10,
+    "productId":1
+}
+
+###
+GET http://localhost:5086/api/sale
+
+###
+GET http://localhost:5086/api/sale/1
+
+###
+GET http://localhost:5086/api/sale/byUser/1

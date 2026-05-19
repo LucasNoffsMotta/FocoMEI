@@ -1,4 +1,5 @@
-﻿using FocoMEI_Backend.Services.Products;
+﻿using FocoMEI_Backend.Models;
+using FocoMEI_Backend.Services.Products;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FocoMEI_Backend.Controller
@@ -7,7 +8,6 @@ namespace FocoMEI_Backend.Controller
     [ApiController]
     public class ProductController : ControllerBase
     {
-
         private IProductService _productService;
 
         public ProductController(IProductService service)
@@ -20,6 +20,13 @@ namespace FocoMEI_Backend.Controller
         {
             var result = await _productService.GetAll();
             return Ok(result);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> Create([FromBody]Product product)
+        {
+            var success = await _productService.Create(product);
+            return success ? Ok() : BadRequest();
         }
     }
 }

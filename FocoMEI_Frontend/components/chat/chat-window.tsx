@@ -30,7 +30,7 @@ export interface Message {
 interface ChatWindowProps {
   contact: Contact | null
   messages: Message[]
-  onSendMessage: (message: string) => void
+  onSendMessage: (message: string) => void | Promise<void>
 }
 
 export function ChatWindow({ contact, messages, onSendMessage }: ChatWindowProps) {
@@ -45,9 +45,9 @@ export function ChatWindow({ contact, messages, onSendMessage }: ChatWindowProps
     scrollToBottom()
   }, [messages])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (newMessage.trim()) {
-      onSendMessage(newMessage)
+      await onSendMessage(newMessage)
       setNewMessage("")
     }
   }
@@ -135,7 +135,7 @@ export function ChatWindow({ contact, messages, onSendMessage }: ChatWindowProps
                     : "bg-message-received text-card-foreground rounded-bl-none"
                 )}
               >
-                <p className="text-sm leading-relaxed">{message.content}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 <div className={cn(
                   "mt-1 flex items-center justify-end gap-1",
                   message.sent ? "text-accent-foreground/70" : "text-muted-foreground"

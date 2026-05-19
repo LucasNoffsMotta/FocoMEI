@@ -13,6 +13,20 @@ namespace FocoMEI_Backend.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Products",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    Value = table.Column<decimal>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Products", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -31,11 +45,19 @@ namespace FocoMEI_Backend.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false)
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Total = table.Column<decimal>(type: "TEXT", nullable: false),
+                    ProductId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Sales", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Sales_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Sales_Users_UserId",
                         column: x => x.UserId,
@@ -44,33 +66,13 @@ namespace FocoMEI_Backend.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "Products",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Description = table.Column<string>(type: "TEXT", nullable: true),
-                    Value = table.Column<decimal>(type: "TEXT", nullable: true),
-                    SaleId = table.Column<int>(type: "INTEGER", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Products", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Products_Sales_SaleId",
-                        column: x => x.SaleId,
-                        principalTable: "Sales",
-                        principalColumn: "Id");
-                });
-
             migrationBuilder.InsertData(
                 table: "Products",
-                columns: new[] { "Id", "Description", "SaleId", "Value" },
+                columns: new[] { "Id", "Description", "Value" },
                 values: new object[,]
                 {
-                    { 1, "Empadinha", null, 10.0m },
-                    { 2, "Coxinha", null, 7.0m }
+                    { 1, "Empadinha", 10.0m },
+                    { 2, "Coxinha", 7.0m }
                 });
 
             migrationBuilder.InsertData(
@@ -79,9 +81,9 @@ namespace FocoMEI_Backend.Migrations
                 values: new object[] { 1, "Ivone" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_SaleId",
-                table: "Products",
-                column: "SaleId");
+                name: "IX_Sales_ProductId",
+                table: "Sales",
+                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sales_UserId",
@@ -93,10 +95,10 @@ namespace FocoMEI_Backend.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "Sales");
 
             migrationBuilder.DropTable(
-                name: "Sales");
+                name: "Products");
 
             migrationBuilder.DropTable(
                 name: "Users");

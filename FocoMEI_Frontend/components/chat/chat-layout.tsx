@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ChatSidebar, type Contact } from "./chat-sidebar"
 import { ChatWindow, type Message } from "./chat-window"
-import { getProducts, getSales } from "@/lib/api"
+import { getProducts, createSale, getSalesByUserId, createProduct } from "@/lib/api"
 
 
 const mockContacts: Contact[] = [
@@ -100,11 +100,211 @@ const mockMessages: Record<string, Message[]> = {
 }
 
 
-function getMockBotResponse(message: string) {
+function isGreeting(message: string): boolean {
+  const text = message.toLowerCase().trim()
+  return text === "oi" || text === "oi!" || text === "olá" || text === "olá!"
+}
+
+function isTotalSales(message: string): boolean {
+  const text = message.toLowerCase().trim()
+  return text === "total vendas"
+}
+
+function isListProducts(message: string): boolean {
+  const text = message.toLowerCase().trim()
+  return text === "produtos"
+}
+
+function isCreateProduct(message: string): { description: string; value: number } | null {
+  // Padrão: "cadastrar produto nome, valor: x"
+  const pattern = /cadastrar\s+produto\s+(.+?),\s*valor:\s*(\d+(?:,\d+)?)/i
+  const match = message.match(pattern)
+  
+  if (match) {
+    const description = match[1].trim()
+    const value = parseFloat(match[2].replace(",", "."))
+    return { description, value }
+  }
+  
+  return null
+}
+
+function isSaleMessage(message: string): { productId: number; quantidade: number } | null {
+  // Padrão: "Vendi 5 do produto 1"
+  const patterns = [
+    /vendi\s+(\d+)\s+do\s+produto\s+(\d+)/i,
+    /vendi\s+(\d+)\s+(?:un|unidade|unidades)?\s+(?:do\s+)?produto\s+(\d+)/i,
+    /venda\s+de\s+(\d+)\s+(?:un|unidade|unidades)?\s+(?:do\s+)?produto\s+(\d+)/i,
+  ]
+
+  const text = message.trim()
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (match) {
+      const quantidade = parseInt(match[1], 10)
+      const productId = parseInt(match[2], 10)
+      return { productId, quantidade }
+    }
+  }
+
+  return null
+}
+
+function getHelpMessage(): string {
+  return "❓ Opções disponíveis:\n\n" +
+         "• Digite `total vendas` para ver todas as suas vendas\n" +
+         "• Digite `cadastrar produto nome, valor: x` para cadastrar um novo produto\n" +
+         "• Digite `produtos` para ver todos os produtos\n" +
+         "• Digite `Vendi X do produto Y` para registrar uma venda"
+}
+
+async function getMockBotResponse(message: string, productsCache: any[] = []) {
   const text = message.toLowerCase()
 
-  if (text.includes("vendi") || text.includes("recebi")) {
-    return "Venda registrada com sucesso! Receita adicionada ao seu fluxo de caixa. 💰"
+  // Greeting - show products
+  if (isGreeting(message)) {
+    try {
+      const products = await getProducts()
+      
+      let response = "👋 Olá! Bem-vindo ao FocoMEI!\n\n"
+      response += "📦 Produtos cadastrados:\n"
+      response += "─".repeat(50) + "\n\n"
+      
+      products.forEach((product: any) => {
+        const nome = product.description || product.nome || "Produto"
+        const valor = product.value || product.valor || 0
+        response += `🔹 ID: ${product.id} - ${nome}\n`
+        response += `   💵 R$ ${valor.toFixed(2)}\n`
+        response += "─".repeat(50) + "\n"
+      })
+      
+      response += "\n" + getHelpMessage()
+      return response
+    } catch (error) {
+      console.error("Erro ao buscar produtos:", error)
+      return "❌ Erro ao carregar produtos. Tente novamente."
+    }
+  }
+
+  // List products
+  if (isListProducts(message)) {
+    try {
+      const products = await getProducts()
+      
+      let response = "📦 Todos os produtos cadastrados:\n"
+      response += "─".repeat(50) + "\n\n"
+      
+      products.forEach((product: any) => {
+        const nome = product.description || product.nome || "Produto"
+        const valor = product.value || product.valor || 0
+        response += `🔹 ID: ${product.id} - ${nome}\n`
+        response += `   💵 R$ ${valor.toFixed(2)}\n`
+        response += "─".repeat(50) + "\n"
+      })
+      
+      response += "\n" + getHelpMessage()
+      return response
+    } catch (error) {
+      console.error("Erro ao buscar produtos:", error)
+      return "❌ Erro ao carregar produtos. Tente novamente."
+    }
+  }
+
+  // Create product
+  const productData = isCreateProduct(message)
+  if (productData) {
+    try {
+      await createProduct({
+        description: productData.description,
+        value: productData.value,
+      })
+
+      let response = `✅ Produto cadastrado com sucesso! 📦\n\n`
+      response += `─`.repeat(50) + "\n"
+      response += `📦 Nome: ${productData.description}\n`
+      response += `💵 Valor: R$ ${productData.value.toFixed(2)}\n`
+      response += `─`.repeat(50) + "\n\n"
+      response += getHelpMessage()
+
+      return response
+    } catch (error) {
+      console.error("Erro ao cadastrar produto:", error)
+      return "❌ Erro ao cadastrar produto. Verifique o formato: \"cadastrar produto nome, valor: x\""
+    }
+  }
+
+  // Total sales
+  if (isTotalSales(message)) {
+    try {
+      const sales = await getSalesByUserId(1)
+      
+      if (sales.length === 0) {
+        let response = "📊 Você ainda não tem vendas registradas.\n\n"
+        response += getHelpMessage()
+        return response
+      }
+
+      let response = "📊 Total de vendas:\n"
+      response += "─".repeat(50) + "\n\n"
+      
+      let totalGeral = 0
+      sales.forEach((sale: any, index: number) => {
+        const nome = sale.itemDescription || "Produto desconhecido"
+        response += `${index + 1}. ${nome}\n`
+        response += `   📦 Quantidade: ${sale.quantidade} unidades\n`
+        response += `   💵 Total: R$ ${sale.total.toFixed(2)}\n`
+        response += "─".repeat(50) + "\n"
+        totalGeral += sale.total
+      })
+      
+      response += `\n💰 Total geral vendido: R$ ${totalGeral.toFixed(2)}\n\n`
+      response += getHelpMessage()
+      return response
+    } catch (error) {
+      console.error("Erro ao buscar vendas:", error)
+      return "❌ Erro ao buscar vendas. Tente novamente."
+    }
+  }
+
+  // Sale message
+  const saleData = isSaleMessage(message)
+  if (saleData) {
+    try {
+      // Buscar produtos para pegar o preço
+      const products = await getProducts()
+      const product = products.find((p: any) => p.id === saleData.productId)
+
+      if (!product) {
+        return `❌ Produto ID ${saleData.productId} não encontrado. Verifique o ID.`
+      }
+
+      const valor = product.value || product.valor || 0
+      const nome = product.description || product.nome || "Produto"
+      const total = valor * saleData.quantidade
+
+      // Criar venda
+      await createSale({
+        userId: 1,
+        total,
+        productId: saleData.productId,
+        quantidade: saleData.quantidade,
+      })
+
+      let response = `✅ Venda registrada com sucesso! 💰\n\n`
+      response += `─`.repeat(50) + "\n"
+      response += `📦 Produto: ${nome}\n`
+      response += `📊 Quantidade: ${saleData.quantidade} unidades\n`
+      response += `💵 Valor unitário: R$ ${valor.toFixed(2)}\n`
+      response += `💰 Total: R$ ${total.toFixed(2)}\n`
+      response += `─`.repeat(50) + "\n\n"
+      response += getHelpMessage()
+
+      return response
+    } catch (error) {
+      console.error("Erro ao registrar venda:", error)
+      return "❌ Erro ao registrar venda. Tente novamente."
+    }
   }
 
   if (text.includes("gastei") || text.includes("paguei")) {
@@ -119,35 +319,10 @@ function getMockBotResponse(message: string) {
     return "Resumo do mês: receitas R$ 1.250,00, despesas R$ 430,00 e lucro estimado de R$ 820,00."
   }
 
-  return "Entendi. Você pode me enviar mensagens como: 'vendi 3 marmitas por 45 reais' ou 'gastei 20 reais com combustível'."
+  return getHelpMessage()
 }
 
 export function ChatLayout() {
-  const testarBackend = async () => {
-  const products = await getProducts()
-  const sales = await getSales()
-
-  console.log("Produtos:", products)
-  console.log("Vendas:", sales)
-}
-
-
-useEffect(() => {
-  async function carregarDados() {
-    try {
-      const products = await getProducts()
-      const sales = await getSales()
-
-      console.log("Produtos:", products)
-      console.log("Vendas:", sales)
-    } catch (error) {
-      console.error("Erro ao conectar com backend:", error)
-    }
-  }
-
-  carregarDados()
-}, [])
-
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [messages, setMessages] = useState<Record<string, Message[]>>(mockMessages)
 
@@ -155,7 +330,7 @@ useEffect(() => {
     setSelectedContact(contact)
   }
 
-const handleSendMessage = (content: string) => {
+const handleSendMessage = async (content: string) => {
   if (!selectedContact) return
 
   const userMessage: Message = {
@@ -169,9 +344,21 @@ const handleSendMessage = (content: string) => {
     read: true,
   }
 
+  // Add user message immediately
+  setMessages((prev) => ({
+    ...prev,
+    [selectedContact.id]: [
+      ...(prev[selectedContact.id] || []),
+      userMessage,
+    ],
+  }))
+
+  // Get bot response (async for sales)
+  const botContent = await getMockBotResponse(content)
+
   const botMessage: Message = {
     id: (Date.now() + 1).toString(),
-    content: getMockBotResponse(content),
+    content: botContent,
     timestamp: new Date().toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
@@ -183,7 +370,6 @@ const handleSendMessage = (content: string) => {
     ...prev,
     [selectedContact.id]: [
       ...(prev[selectedContact.id] || []),
-      userMessage,
       botMessage,
     ],
   }))
